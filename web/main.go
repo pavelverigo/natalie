@@ -182,14 +182,15 @@ func (s *server) handleNodeOp(w http.ResponseWriter, r *http.Request, name strin
 	switch op.Op {
 	case "nat":
 		type natData struct {
-			Dest string `json:"dest"`
+			Dest  string `json:"dest"`
+			Local bool   `json:"local"`
 		}
 		var nat natData
 		err := json.Unmarshal(op.Data, &nat)
 		if err != nil {
 			panic(err)
 		}
-		node.TraversalHandshake(nat.Dest)
+		node.TraversalHandshake(nat.Dest, nat.Local)
 	case "direct":
 		type directData struct {
 			Addr string `json:"addr"`

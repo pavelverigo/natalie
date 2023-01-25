@@ -8,6 +8,7 @@ const directButton = document.getElementById("direct-button")
 
 const natInput = document.getElementById("nat-input");
 const natButton = document.getElementById("nat-button")
+const natCheckbox = document.getElementById("nat-checkbox")
 
 const destInput = document.getElementById("dest-input");
 const textInput = document.getElementById("text-input")
@@ -94,7 +95,8 @@ directButton.onclick = () => {
 
 natButton.onclick = () => {
   let dest = natInput.value
-  postData(api, { op: "nat", data: { dest: dest }});
+  let local = natCheckbox.checked
+  postData(api, { op: "nat", data: { dest: dest, local: local }});
   fetchNodeList();
 }
 

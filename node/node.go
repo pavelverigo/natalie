@@ -33,6 +33,7 @@ func New(name string, port int, log *log.Logger) (Node, error) {
 		mu:  sync.Mutex{},
 
 		conn: conn,
+		port: conn.LocalAddr().(*net.UDPAddr).Port,
 		name: name,
 
 		name2addr: bimap.New[string, string](0),
@@ -60,6 +61,7 @@ type node struct {
 	mu  sync.Mutex
 
 	conn *net.UDPConn
+	port int
 	name string
 
 	name2addr *bimap.BiMap[string, string]
@@ -97,7 +99,7 @@ type Node interface {
 	SendChat(dest, text string) error
 
 	DirectHandshake(addr string)
-	TraversalHandshake(name string)
+	TraversalHandshake(name string, local bool)
 }
 
 func (n *node) Start() error {
@@ -154,10 +156,10 @@ func (n *node) SendChat(dest, text string) error {
 	return n.sendChat(dest, text)
 }
 
-func (n *node) TraversalHandshake(name string) {
+func (n *node) TraversalHandshake(name string, local bool) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	n.traversalHandshake(name)
+	n.traversalHandshake(name, local)
 }
 
 func (n *node) removeNeighbor(name string) {

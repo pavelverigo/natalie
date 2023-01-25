@@ -2,12 +2,16 @@ package node
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
+
+	"github.com/jackpal/gateway"
 )
 
 type traversalReqMsg struct {
 	KnownAddr []string
+	UseLocal  bool
 }
 
 func (msg *traversalReqMsg) Type() string {
@@ -16,6 +20,7 @@ func (msg *traversalReqMsg) Type() string {
 
 type traversalRespMsg struct {
 	KnownAddr []string
+	UseLocal  bool
 }
 
 func (msg *traversalRespMsg) Type() string {
@@ -37,7 +42,8 @@ func (n *node) processTraversalReq(pkt *packet, addr string) error {
 	go n.traversalLoop(pkt.Source, msg.KnownAddr)
 
 	respPkt := n.newPacket(pkt.Source, &traversalRespMsg{
-		KnownAddr: n.knownAddr.Keys(),
+		KnownAddr: n.getPossibleAddresses(msg.UseLocal),
+		UseLocal:  msg.UseLocal,
 	})
 	relayAddr := n.resolveRelayAddr(pkt.Source)
 	if relayAddr == "" {
@@ -88,9 +94,22 @@ func (n *node) traversalLoop(dest string, known []string) {
 	}
 }
 
-func (n *node) traversalHandshake(dest string) error {
+func (n *node) getPossibleAddresses(local bool) []string {
+	r := n.knownAddr.Keys()
+	if local {
+		ip, err := gateway.DiscoverInterface()
+		if err != nil {
+			log.Fatalln(err, "getPossible")
+		}
+		r = append(r, fmt.Sprintf("%s:%d", ip, n.port))
+	}
+	return r
+}
+
+func (n *node) traversalHandshake(dest string, local bool) error {
 	pkt := n.newPacket(dest, &traversalReqMsg{
-		KnownAddr: n.knownAddr.Keys(),
+		KnownAddr: n.getPossibleAddresses(local),
+		UseLocal:  local,
 	})
 	relayAddr := n.resolveRelayAddr(dest)
 	if relayAddr == "" {
